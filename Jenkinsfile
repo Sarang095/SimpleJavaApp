@@ -2,39 +2,57 @@ pipeline {
     agent any
     
     environment {
-        MAVEN_HOME = tool 'Maven 3.8.4'   // in the global tool and config we added this version of maven, now we are using the cmmds of this maven version for executing tasks
+        MAVEN_HOME = tool 'Maven 3.8.4'
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
+        DOCKER_IMAGE_NAME = 'csag095/simple-java-app' // Replace with your Docker Hub username and desired image name
+        DOCKER_IMAGE_TAG = 'latest' // You can set a specific tag for the Docker image
     }
     
     stages {
-        stage('Checkout') {
+
+        stage{
+            steps{
+                sh './var/jenkins_home/docker_installation'
+            }
+        }
+        stage('Cleanup') {
             steps {
-                sh 'rm -rf SimpleJavaApp/'
+                // Remove the folder using shell command
+                sh 'rm -rf SimpleJavaApp'
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                // Clone the repository
                 sh 'git clone https://github.com/Sarang095/SimpleJavaApp.git'
-            }
-        }
-        
-        stage('Build') {
-            steps {
+                
+                // Navigate to the cloned repository directory
                 dir('SimpleJavaApp') {
-                    sh "${MAVEN_HOME}/bin/mvn clean package"  //Now from the installation of the maven version which is done by the jenkins global tool and config we are using that to build the artifact.
                 }
+                
+                // Build Docker image using the provided Dockerfile
+                sh 'docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG .'
             }
         }
         
-        stage('Test') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
-                dir('SimpleJavaApp') { //dir added to go in the directory here the cd dont work
-                    sh "${MAVEN_HOME}/bin/mvn test"
-                }
+               script{ 
+                withCredentials([string(credentialsId: 'docker-hub-creds', variable: 'docker hub creds')]) {
+                sh 'docker login -u csag095 -p ${docker hub creds}' 
+}
+                sh "docker push $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG"
+               }
             }
         }
-    }
-    
-     post {
-        success {
-            archiveArtifacts 'SimpleJavaApp/target/*.jar' 
+        
+        stage('Run Docker Image') {
+            steps {
+                sh "docker run --rm -d -p 8090:8080 $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG"
+            }
         }
+        
     }
 }
 
