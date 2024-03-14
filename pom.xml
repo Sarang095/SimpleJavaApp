@@ -17,6 +17,8 @@
     </dependencies>
     
     <build>
+        <finalName>simple-java-app</finalName> <!-- Specify the final name of the generated JAR -->
+        
         <plugins>
             <!-- Maven Compiler Plugin -->
             <plugin>
