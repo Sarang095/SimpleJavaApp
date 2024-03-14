@@ -10,6 +10,6 @@ FROM openjdk:11-jre-slim
 
 WORKDIR /app
 COPY --from=builder /SimpleJavaApp/target/simple-java-app.jar .
-EXPOSE 8090
+EXPOSE 8080
 CMD ["java", "-jar", "simple-java-app.jar"]
 
